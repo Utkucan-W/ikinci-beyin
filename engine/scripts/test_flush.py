@@ -283,6 +283,40 @@ class PrecompactContinuityTests(unittest.TestCase):
             json.loads(record.read_text(encoding="utf-8"))["uid"], first_uid
         )
 
+    def test_retry_flush_bos_does_not_delete_a_freshly_written_record(self):
+        """Eski FLUSH_BOS sonucu yeni kaydı silmemeli.
+
+        Silme dalı da nesil kontrolünün arkasında olmalı; yoksa "yazacak bir
+        şey yok" kararı, o karardan sonra oluşmuş bambaşka bir oturumun
+        kaydını yok eder.
+        """
+        retry = self.load_retry_module()
+        transcript = self.root / "bos.jsonl"
+        transcript.write_text(
+            json.dumps({"role": "user", "content": "Tek tur"}) + "\n",
+            encoding="utf-8",
+        )
+        event_time = dt.datetime(2026, 9, 3, 12, tzinfo=dt.timezone.utc)
+        FLUSH._defer_flush(
+            FLUSH.STATE_DIR, "bos-oturum", transcript,
+            "sessionend", "provider-down", event_time,
+        )
+        record = next((FLUSH.STATE_DIR / FLUSH.DEFERRED_DIR_NAME).glob("*.json"))
+
+        def empty_then_replace(*_args, **_kwargs):
+            record.unlink()
+            FLUSH._defer_flush(
+                FLUSH.STATE_DIR, "bos-oturum", transcript,
+                "sessionend", "provider-down-again", event_time,
+            )
+            return "FLUSH_BOS", None, "codex"
+
+        with mock.patch.object(FLUSH, "_run_summary", side_effect=empty_then_replace):
+            result = retry._retry_one(record, dry_run=False)
+
+        self.assertEqual(result, "kayit-yenilendi")
+        self.assertTrue(record.exists(), "yeni kayıt silinmemeli")
+
     def test_precompact_prompt_requests_a_bounded_summary(self):
         prompt = FLUSH.build_flush_prompt("kayıt", 1200)
 

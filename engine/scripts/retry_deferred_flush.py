@@ -86,10 +86,7 @@ def _retry_one(path: Path, dry_run: bool) -> str:
     summary, error, provider = FLUSH._run_summary(prompt, FLUSH.VAULT_ROOT)
     if error is not None or not summary:
         return f"hala-basarisiz:{error or 'bos'}"
-    if summary == "FLUSH_BOS":
-        path.unlink(missing_ok=True)
-        return "flush-bos"
-    if not FLUSH.validate_summary(summary):
+    if summary != "FLUSH_BOS" and not FLUSH.validate_summary(summary):
         return "sema-gecersiz"
 
     # Özet üretimi dakikalar sürebilir; bu sürede normal bir flush aynı oturumu
@@ -105,10 +102,14 @@ def _retry_one(path: Path, dry_run: bool) -> str:
         if current is None:
             return "zaten-islendi"
         if not _same_record(record, current):
-            # Aynı ada yeni bir kayıt yazılmış: bu özet artık o kaydı
+            # Aynı ada yeni bir kayıt yazılmış: bu sonuç artık o kaydı
             # temsil etmiyor. Dokunma, bir sonraki tur onu kendi özetiyle
-            # işlesin.
+            # işlesin. Silme dalı da buraya bağlıdır: eski bir FLUSH_BOS
+            # sonucu yeni kaydı sessizce yok edebilirdi.
             return "kayit-yenilendi"
+        if summary == "FLUSH_BOS":
+            path.unlink(missing_ok=True)
+            return "flush-bos"
         FLUSH._append_daily(
             FLUSH.VAULT_ROOT,
             summary,

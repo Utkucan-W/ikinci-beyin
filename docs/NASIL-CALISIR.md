@@ -118,7 +118,8 @@ geçici dizin kullanır:
 python3 engine/scripts/test_flush.py
 ```
 
-8 test: süreklilik özeti, sınırlı prompt, makine okunur çıktı, PreCompact
-kancası ve dört veri bütünlüğü kuralı (compaction sonrası bölüm kaybolmaz,
+10 test: süreklilik özeti, sınırlı prompt, makine okunur çıktı, PreCompact
+kancası ve altı veri bütünlüğü kuralı — compaction sonrası bölüm kaybolmaz,
 kısa PreCompact sonraki oturumu yutmaz, başarılı yazım kuyruğu temizler,
-retry yarışta ikinci kez yazmaz).
+retry aynı oturumu ikinci kez yazmaz, retry yenilenmiş kaydı eski özetle
+tüketmez, boş sonuç yenilenmiş kaydı silmez.
