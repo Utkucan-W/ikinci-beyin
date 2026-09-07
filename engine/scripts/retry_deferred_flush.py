@@ -38,6 +38,21 @@ def _load(path: Path) -> dict[str, Any] | None:
     return value if isinstance(value, dict) else None
 
 
+def _same_record(before: dict[str, Any], after: dict[str, Any]) -> bool:
+    """İki okuma arasında kayıt aynı mı kaldı?
+
+    `uid` yeni kayıtlarda vardır; eski kayıtlarda yoksa zaman damgası ve
+    transkript yoluna düşülür.
+    """
+    before_uid, after_uid = before.get("uid"), after.get("uid")
+    if before_uid or after_uid:
+        return before_uid == after_uid
+    return (
+        before.get("ts") == after.get("ts")
+        and before.get("transcript_path") == after.get("transcript_path")
+    )
+
+
 def _event_time(record: dict[str, Any]) -> dt.datetime:
     stamp = record.get("ts")
     if isinstance(stamp, (int, float)) and stamp > 0:
@@ -86,8 +101,14 @@ def _retry_one(path: Path, dry_run: bool) -> str:
     lock_path.parent.mkdir(parents=True, exist_ok=True)
     with lock_path.open("a+", encoding="utf-8") as lock_file:
         fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
-        if not path.exists():
+        current = _load(path)
+        if current is None:
             return "zaten-islendi"
+        if not _same_record(record, current):
+            # Aynı ada yeni bir kayıt yazılmış: bu özet artık o kaydı
+            # temsil etmiyor. Dokunma, bir sonraki tur onu kendi özetiyle
+            # işlesin.
+            return "kayit-yenilendi"
         FLUSH._append_daily(
             FLUSH.VAULT_ROOT,
             summary,

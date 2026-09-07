@@ -241,6 +241,48 @@ class PrecompactContinuityTests(unittest.TestCase):
         self.assertEqual(result, "zaten-islendi")
         append.assert_not_called()
 
+    def test_retry_leaves_a_freshly_written_record_alone(self):
+        """Aynı ada yeni kayıt yazılmışsa retry onu eski özetle kapatmamalı.
+
+        Kaydı yalnız varlığıyla doğrulamak yetmez: A silinip aynı dosya adıyla
+        B yazılırsa, retry eski özeti rapora ekleyip B'yi siler ve B'nin
+        temsil ettiği oturum tamamen kaybolur.
+        """
+        retry = self.load_retry_module()
+        transcript = self.root / "nesil.jsonl"
+        transcript.write_text(
+            json.dumps({"role": "user", "content": "Tek tur"}) + "\n",
+            encoding="utf-8",
+        )
+        event_time = dt.datetime(2026, 9, 3, 12, tzinfo=dt.timezone.utc)
+        FLUSH._defer_flush(
+            FLUSH.STATE_DIR, "nesil-oturum", transcript,
+            "sessionend", "provider-down", event_time,
+        )
+        record = next((FLUSH.STATE_DIR / FLUSH.DEFERRED_DIR_NAME).glob("*.json"))
+        first_uid = json.loads(record.read_text(encoding="utf-8"))["uid"]
+
+        def summarise_then_replace(*_args, **_kwargs):
+            # Normal flush eski kaydı tüketti, sonra oturum yine düştü ve
+            # aynı adla yeni bir kayıt oluştu.
+            record.unlink()
+            FLUSH._defer_flush(
+                FLUSH.STATE_DIR, "nesil-oturum", transcript,
+                "sessionend", "provider-down-again", event_time,
+            )
+            return SUMMARY, None, "codex"
+
+        with mock.patch.object(FLUSH, "_run_summary", side_effect=summarise_then_replace), \
+                mock.patch.object(FLUSH, "_append_daily") as append:
+            result = retry._retry_one(record, dry_run=False)
+
+        self.assertEqual(result, "kayit-yenilendi")
+        append.assert_not_called()
+        self.assertTrue(record.exists(), "yeni kayıt silinmemeli")
+        self.assertNotEqual(
+            json.loads(record.read_text(encoding="utf-8"))["uid"], first_uid
+        )
+
     def test_precompact_prompt_requests_a_bounded_summary(self):
         prompt = FLUSH.build_flush_prompt("kayıt", 1200)
 

@@ -15,6 +15,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import uuid
 import time
 from typing import Any, Callable, Sequence
 
@@ -597,6 +598,9 @@ def _defer_flush(
             directory / f"{key}.json",
             {
                 "session_id": session_id,
+                # Kaydın nesli: retry, özet üretirken kaydın silinip aynı adla
+                # yenisinin oluşturulduğunu ancak bununla ayırt edebilir.
+                "uid": uuid.uuid4().hex,
                 "transcript_path": str(transcript_path),
                 "reason": reason,
                 "error": error,
