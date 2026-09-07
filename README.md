@@ -35,7 +35,7 @@ Yapılacaklar.**
 ### Yol 1 — Claude'a yaptır
 
 ```bash
-git clone https://github.com/<kullanıcı>/ikinci-beyin.git
+git clone https://github.com/Utkucan-W/ikinci-beyin.git
 cd ikinci-beyin
 claude
 ```
@@ -47,7 +47,7 @@ Sonra Claude'a şunu söyle:
 ### Yol 2 — Kendin çalıştır
 
 ```bash
-git clone https://github.com/<kullanıcı>/ikinci-beyin.git
+git clone https://github.com/Utkucan-W/ikinci-beyin.git
 cd ikinci-beyin
 ./install.sh
 ```
