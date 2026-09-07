@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+engine/scripts/.state/*
+!engine/scripts/.state/.gitkeep
+.DS_Store
