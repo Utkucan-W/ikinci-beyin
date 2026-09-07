@@ -47,8 +47,14 @@ for h in lib.sh session-start.sh session-end.sh session-continuity.sh pre-compac
 done
 for s in flush.py retry_deferred_flush.py; do
   if [ -f "${ENGINE}/scripts/${s}" ]; then
-    python3 -m py_compile "${ENGINE}/scripts/${s}" 2>/dev/null \
-      && ok "scripts/${s}" || bad "scripts/${s} derlenmiyor"
+    # ast.parse kullanılır: py_compile diske __pycache__ yazar, bu betik
+    # salt-okunur kalmalıdır.
+    if python3 -c 'import ast,sys; ast.parse(open(sys.argv[1],encoding="utf-8").read())' \
+         "${ENGINE}/scripts/${s}" 2>/dev/null; then
+      ok "scripts/${s}"
+    else
+      bad "scripts/${s} ayrıştırılamıyor"
+    fi
   else
     bad "scripts/${s} eksik"
   fi

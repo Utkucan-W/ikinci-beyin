@@ -330,7 +330,14 @@ def _is_recent_duplicate(
     state_dir: Path,
     session_id: str,
     now_epoch: float,
+    reason: str = "",
 ) -> bool:
+    """Aynı olayın 60 saniye içinde tekrarı mı?
+
+    PreCompact ve SessionEnd farklı olaylardır: compaction'dan hemen sonra
+    kapatılan bir oturumda, compaction sonrası konuşulanlar ayrı bir kayıttır.
+    Bu yüzden yalnız *aynı* reason tekrarı yinelenme sayılır.
+    """
     session_state_path = _session_state_path(state_dir, session_id)
     state_path = (
         session_state_path
@@ -341,6 +348,9 @@ def _is_recent_duplicate(
     if state.get("session_id") != session_id:
         return False
     if state.get("status", "ok") != "ok":
+        return False
+    previous_reason = state.get("reason")
+    if reason and isinstance(previous_reason, str) and previous_reason != reason:
         return False
     timestamp = state.get("ts")
     if not isinstance(timestamp, (int, float)):
@@ -354,6 +364,7 @@ def _write_flush_state(
     now_epoch: float,
     status: str,
     detail: str = "",
+    reason: str = "",
 ) -> None:
     payload = {
         "session_id": session_id,
@@ -362,6 +373,8 @@ def _write_flush_state(
     }
     if detail:
         payload["detail"] = detail
+    if reason:
+        payload["reason"] = reason
     _atomic_write_json(_session_state_path(state_dir, session_id), payload)
     try:
         _atomic_write_json(state_dir / "last-flush.json", payload)
@@ -555,6 +568,18 @@ def _run_summary(
     return None, "|".join(errors)[-400:], ""
 
 
+def _clear_deferred(state_dir: Path, session_id: str) -> None:
+    """Oturum başarıyla yazıldıysa kuyruktaki kaydını at.
+
+    Aksi hâlde retry_deferred_flush.py aynı oturumu ikinci kez rapora ekler.
+    """
+    try:
+        key = hashlib.sha256(session_id.encode("utf-8")).hexdigest()[:16]
+        (state_dir / DEFERRED_DIR_NAME / f"{key}.json").unlink(missing_ok=True)
+    except OSError:
+        write_health(state_dir, "deferred-cleanup-failed", warning=True)
+
+
 def _defer_flush(
     state_dir: Path,
     session_id: str,
@@ -693,7 +718,7 @@ def _flush_once(
     lock_path = _session_lock_path(STATE_DIR, session_id)
     with lock_path.open("a+", encoding="utf-8") as lock_file:
         fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
-        if _is_recent_duplicate(STATE_DIR, session_id, now_epoch):
+        if _is_recent_duplicate(STATE_DIR, session_id, now_epoch, args.reason):
             return "duplicate", ""
 
         turns = read_transcript(transcript_path)
@@ -756,7 +781,9 @@ def _flush_once(
                 now_epoch,
                 "ok",
                 f"flush-bos:{provider}",
+                args.reason,
             )
+            _clear_deferred(STATE_DIR, session_id)
             clear_health(STATE_DIR)
             return "flush-bos", ""
         if not validate_summary(summary):
@@ -776,7 +803,9 @@ def _flush_once(
                 now_epoch,
                 "ok",
                 f"appended:{provider}",
+                args.reason,
             )
+            _clear_deferred(STATE_DIR, session_id)
             clear_health(STATE_DIR)
         except OSError:
             _record_flush_failure(

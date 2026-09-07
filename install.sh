@@ -179,8 +179,16 @@ if not isinstance(hooks, dict):
     sys.exit("  settings.json içindeki 'hooks' bir nesne değil. Elle düzelt, sonra tekrar dene.")
 
 def ours(entry):
-    """Daha önce bu kurulumun eklediği bir kanca girdisi mi?"""
-    return MARKER in json.dumps(entry, ensure_ascii=False)
+    """Daha önce bu kurulumun eklediği bir kanca girdisi mi?
+
+    Yalnız `command` alanına bakılır. Tüm JSON'da arama yapmak, kullanıcının
+    kendi kancasının herhangi bir alanında bu dizge geçtiğinde onu yanlışlıkla
+    bizim sayıp silmeye yol açardı.
+    """
+    if not isinstance(entry, dict):
+        return False
+    command = entry.get("command")
+    return isinstance(command, str) and MARKER in command
 
 added = removed = 0
 for event, scripts in WIRING.items():
