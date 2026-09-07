@@ -108,3 +108,17 @@ dosyaların büyüdükçe açılış maliyetin artmaz.
 - **Yazma atomiktir.** Geçici dosyaya yazılır, doğrulanır, `os.replace` ile
   yerine konur.
 - **Motor vault dışına yazmaz.** Tek istisna kurulum anıdır.
+
+## Testler
+
+Motorun regresyon testleri kurulumdan bağımsız çalışır; hiçbir şeye yazmaz,
+geçici dizin kullanır:
+
+```bash
+python3 engine/scripts/test_flush.py
+```
+
+8 test: süreklilik özeti, sınırlı prompt, makine okunur çıktı, PreCompact
+kancası ve dört veri bütünlüğü kuralı (compaction sonrası bölüm kaybolmaz,
+kısa PreCompact sonraki oturumu yutmaz, başarılı yazım kuyruğu temizler,
+retry yarışta ikinci kez yazmaz).

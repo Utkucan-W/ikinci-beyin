@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import fcntl
 import json
 import os
 from pathlib import Path
@@ -76,13 +77,24 @@ def _retry_one(path: Path, dry_run: bool) -> str:
     if not FLUSH.validate_summary(summary):
         return "sema-gecersiz"
 
-    FLUSH._append_daily(
-        FLUSH.VAULT_ROOT,
-        summary,
-        str(record.get("reason", "deferred")),
-        _event_time(record),
-    )
-    path.unlink(missing_ok=True)
+    # Özet üretimi dakikalar sürebilir; bu sürede normal bir flush aynı oturumu
+    # yazıp kuyruk kaydını silmiş olabilir. Rapora eklemeyi oturum kilidi
+    # altında yap ve kaydın hâlâ durduğunu son anda bir kez daha doğrula;
+    # aksi hâlde aynı oturum rapora iki kez girer.
+    session_id = str(record.get("session_id", ""))
+    lock_path = FLUSH._session_lock_path(FLUSH.STATE_DIR, session_id)
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    with lock_path.open("a+", encoding="utf-8") as lock_file:
+        fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+        if not path.exists():
+            return "zaten-islendi"
+        FLUSH._append_daily(
+            FLUSH.VAULT_ROOT,
+            summary,
+            str(record.get("reason", "deferred")),
+            _event_time(record),
+        )
+        path.unlink(missing_ok=True)
     return f"eklendi:{provider}"
 
 

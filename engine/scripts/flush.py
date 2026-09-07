@@ -731,6 +731,7 @@ def _flush_once(
                 now_epoch,
                 "ok",
                 "below-minimum-turns",
+                args.reason,
             )
             clear_health(STATE_DIR)
             return "below-minimum-turns", ""
