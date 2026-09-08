@@ -4,6 +4,15 @@ Bu makinede Claude, kalıcı bir hafıza vault'u ile çalışır.
 
 **Vault:** `__VAULT_PATH__`
 
+## İlk kişiselleştirme
+
+`🔮 850-Companion/Core.md` dosyasında hâlâ `<...>` alanları varsa, ilk uygun
+anda kullanıcıya kısa birer soruyla şu bilgileri sor ve yanıtlarını bu dosyaya
+yaz: nasıl hitap edilmesini istediği, ne yaptığı, şu anki 1-2 önceliği ve ana
+çalışma alanı. Ana çalışma alanının **isteğe bağlı** olduğunu açıkça belirt;
+boş bırakmak isterse ilgili satırı sil. Yanıt dili varsayılan olarak Türkçedir,
+bu nedenle dil tercihini sormana gerek yoktur.
+
 ## Her anlamlı görevde
 
 - Görevin türünü belirle, sonra **yalnız ilgili** notu aç. Tüm vault'u

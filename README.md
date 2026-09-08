@@ -43,6 +43,7 @@ claude
 Sonra Claude'a şunu söyle:
 
 > Bu repodaki README'yi oku ve ikinci beyin sistemini bilgisayarıma kur.
+> Kurulum bitince ilk kişiselleştirme adımını da uygula.
 
 ### Yol 2 — Kendin çalıştır
 
@@ -64,8 +65,11 @@ güvenlidir.
 
 ## Kurulumdan sonra
 
-1. **`<...>` alanlarını doldur:** `<vault>/🔮 850-Companion/Core.md` — asistan
-   seni buradan tanır. Beş dakikanı ayır, sistemin değerinin yarısı burada.
+1. **İlk kişiselleştirme:** Claude; sana nasıl hitap edeceğini, ne yaptığını ve
+   şu anki 1-2 önceliğini sorar. Ayrıca projelerini tuttuğun ana klasörü sorar
+   (**isteğe bağlı**; ör. `~/Projects`). Yanıtlarını
+   `<vault>/🔮 850-Companion/Core.md` dosyasına işler. Yanıt dili varsayılan
+   olarak Türkçedir.
 2. **Claude Code'u yeniden başlat.** Kancalar açılışta yüklenir.
 3. **Doğrula:** `./verify.sh`
 

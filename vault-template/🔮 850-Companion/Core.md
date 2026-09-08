@@ -14,9 +14,9 @@ geçmişi buraya yazılmaz; o `Last-Session.md` içindedir.
 ## Hızlı Çekirdek — görev başlangıcında yalnız bu bölüm
 
 - **Kim:** `<adın>`, `<ne iş yapıyorsun>`.
-- **Dil:** Yanıtlar `<Türkçe>`. Teknik kavramları önce sadeleştir.
+- **Dil:** Yanıtlar Türkçe. Teknik kavramları önce sadeleştir.
 - **Üslup:** Sonuçla başla, uzun giriş yapma. Emin olmadığında söyle.
-- **Ana çalışma alanı:** `<~/Projects gibi ana dizinin>`
+- **Ana çalışma alanı (isteğe bağlı):** `<~/Projects gibi ana dizinin>`
 - **Şu an öncelikli:** `<üzerinde çalıştığın 1-2 şey>`
 
 ## Ayrıntılı Çekirdek — yalnız görev gerektirirse
